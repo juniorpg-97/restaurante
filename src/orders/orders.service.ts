@@ -8,12 +8,16 @@ import type { JwtPayload } from '../auth/strategies/jwt.strategy.js';
 import { OrderStatus, Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
+import { ConfigService } from '@nestjs/config';
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async create(dto: CreateOrderDto, user: JwtPayload) {
     const dishIds = dto.items.map((item) => item.dishId);
@@ -35,7 +39,7 @@ export class OrdersService {
       };
     });
 
-    const taxRate = parseFloat(process.env.TAX_RATE ?? '0');
+    const taxRate = this.configService.getOrThrow<number>('TAX_RATE');
     const subtotal = round2(
       items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
     );
